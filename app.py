@@ -5,9 +5,9 @@ import streamlit as st
 # Debugging Step 1: Check if st.secrets has any content at all
 st.write("Debug Step 1: st.secrets content:", st.secrets)
 
-# Debugging Step 2: Attempt to retrieve the OpenAI API key
+# Debugging Step 2: Attempt to retrieve the OpenAI API key using the correct key name
 try:
-    api_key = st.secrets["openai_api_key"]
+    api_key = st.secrets["OPENAI_API_KEY"]
     st.write("Debug Step 2: Successfully retrieved API key.")  # Debugging
 except KeyError as e:
     st.error(f"Debug Step 2: Failed to retrieve API key. KeyError: {e}")
