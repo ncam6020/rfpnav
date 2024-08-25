@@ -2,15 +2,14 @@ import openai
 import fitz  # PyMuPDF
 import streamlit as st
 
-# Load the OpenAI API key from secrets
-api_key = st.secrets["openai"]["OPENAI_API_KEY"]
-
-# Use the API key
+# Set up the OpenAI API key
+api_key = st.secrets["openai_api_key"]
 openai.api_key = api_key
 
-st.title("RFP Navigator 🧭")
+st.write(f"OpenAI API Key: {api_key}")  # Debugging: check if the key is being retrieved correctly
 
-# Step 1: Upload PDF and Extract Text
+st.title("RFP Navigator")
+
 uploaded_file = st.file_uploader("Upload your PDF", type=["pdf"])
 
 if uploaded_file:
@@ -20,26 +19,27 @@ if uploaded_file:
         text = ""
         for page in doc:
             text += page.get_text()
-        
-        # Display the extracted text for now (optional, for debugging)
+
+        # Display the extracted text
         st.text_area("Extracted Text", value=text, height=300)
 
-        # Step 2: Interact with OpenAI API
-        if st.button("Process with OpenAI"):
-            # Sample prompt template
-            prompt = f"Please analyze the following RFP document text:\n\n{text[:1500]}"
+        # Prepare a simple prompt template
+        prompt_template = """
+        Based on the following text from an RFP document, please summarize the key points:
 
-            # Call OpenAI API
+        RFP Document Text:
+        {extracted_text}
+        """
+
+        # Handle the prompt and get the response from OpenAI
+        if st.button("Generate Summary"):
+            prompt = prompt_template.format(extracted_text=text)
             response = openai.Completion.create(
-                model="gpt-3.5-turbo",
+                model="text-davinci-003",
                 prompt=prompt,
                 max_tokens=1024,
                 temperature=0.5
             )
-
-            # Display the OpenAI response
-            st.write("Response from OpenAI:")
-            st.write(response.choices[0].text.strip())
-
+            st.text_area("Summary", value=response.choices[0].text.strip(), height=300)
     except Exception as e:
         st.error(f"Error: {e}")
