@@ -50,12 +50,15 @@ if uploaded_file:
         if st.button("Generate Summary"):
             st.write("Debug Step 6: Generating summary...")  # Debugging
             prompt = prompt_template.format(extracted_text=text)
-            response = openai.Completion.create(
-                model="text-davinci-003",
-                prompt=prompt,
+            response = openai.ChatCompletion.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are an assistant that summarizes RFP documents."},
+                    {"role": "user", "content": prompt}
+                ],
                 max_tokens=1024,
                 temperature=0.5
             )
-            st.text_area("Summary", value=response.choices[0].text.strip(), height=300)
+            st.text_area("Summary", value=response['choices'][0]['message']['content'].strip(), height=300)
     except Exception as e:
         st.error(f"Debug Step 7: Error processing PDF or generating summary. Error: {e}")
