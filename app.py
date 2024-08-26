@@ -90,11 +90,11 @@ with st.sidebar:
 
             crm_data_template = """
             Extract and present the following key data points from this RFP document in a table format for CRM entry:
+            - Client Name
             - Opportunity Name
             - Primary Contact (name, title, email, and phone)
             - Primary Practice (select from: Branded Environments, Corporate and Commercial, Corporate Interiors, Cultural and Civic, Health, Higher Education, Hospitality, K-12 Education, Landscape Architecture, Planning&Strategies, Science and Technology, Single Family Residential, Sports Recreation and Entertainment, Transportation, Urban Design, Unknown / Other)
             - Discipline (select from: Arch/Interior Design, Urban Design, Landscape Arch, Advisory Services, Branded Environments, Unknown / Other)
-            - Client Name
             - City
             - Country
             - RFP Release Date
