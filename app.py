@@ -111,7 +111,7 @@ with st.sidebar:
             - Delivery Type (select from: Construction Manager at Risk (CMaR), Design Only, Design-Bid-Build, Design-Build, Integrated Project Delivery (IPD), Guaranteed Maximum Price (GMP), Joint Venture (JV), Public Private Partnership (P3), Other)
             - Estimated Program Area
             - Estimated Budget
-            - Required Sustainability Certification
+            - Sustainability Requirement
             
             If the information is not found, respond with 'Sorry, I could not find that information.'
 
