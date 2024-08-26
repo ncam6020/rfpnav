@@ -1,15 +1,12 @@
 import openai
 import fitz  # PyMuPDF
 import streamlit as st
-import json
-import os
-from datetime import datetime
 
 # Load the OpenAI API key from secrets
 api_key = st.secrets["OPENAI_API_KEY"]
 openai.api_key = api_key
 
-# Set up the page configuration
+# Set up the page configurations
 st.set_page_config(page_title="RFP Navigator", page_icon="🧭")
 
 # Initialize session state variables if they don't exist
@@ -22,7 +19,7 @@ if "extracted_text" not in st.session_state:
 if "feedback" not in st.session_state:
     st.session_state.feedback = []
 if "uploaded_file" not in st.session_state:
-    st.session_state.uploaded_file = None  # Initialize uploaded_file in session state
+    st.session_state.uploaded_file = None
 
 # Function to extract text from uploaded PDF
 def extract_text_from_pdf(file_content):
@@ -61,37 +58,24 @@ def handle_prompt(text, prompt_template):
         st.error(f"An error occurred: {str(e)}")
         return "An error occurred while processing the request."
 
-# Function to save log data to a JSON file
-def save_log_data(log_data):
-    log_file_path = "rfp_navigator_logs.json"
-    if os.path.exists(log_file_path):
-        with open(log_file_path, "r") as log_file:
-            logs = json.load(log_file)
-    else:
-        logs = []
-
-    logs.append(log_data)
-
-    with open(log_file_path, "w") as log_file:
-        json.dump(logs, log_file, indent=4)
-
 # Sidebar for OpenAI API key, PDF uploader, and feedback
 with st.sidebar:
     st.title("RFP Navigator 🧭")
     st.markdown('---')  # Add horizontal line after the title
+
+    # PDF uploader with single file check
     uploaded_file = st.file_uploader("Upload your PDF", type=["pdf"], key="file_uploader")
 
     if uploaded_file:
+        # Clear previous file if a new one is uploaded
         if st.session_state.uploaded_file and st.session_state.uploaded_file.name != uploaded_file.name:
-            st.session_state.uploaded_file = uploaded_file
-            st.session_state.extracted_text = extract_text_from_pdf(uploaded_file.read())
-            # Log the new upload
-            log_data = {
-                "timestamp": datetime.now().isoformat(),
-                "file_name": uploaded_file.name,
-                "event": "New PDF uploaded"
-            }
-            save_log_data(log_data)
+            st.session_state.extracted_text = ""
+            st.session_state.messages = [{"role": "assistant", "content": "How can I help navigate your RFP?"}]
+        
+        st.session_state.uploaded_file = uploaded_file
+
+        # Extract text from the PDF and store it in session state
+        st.session_state.extracted_text = extract_text_from_pdf(uploaded_file.read())
 
         # Title for the key actions
         st.markdown('---')
@@ -110,14 +94,6 @@ with st.sidebar:
 
             summary = handle_prompt(st.session_state.extracted_text, summary_template)
             st.session_state.messages.append({"role": "assistant", "content": summary})
-            # Log the action
-            log_data = {
-                "timestamp": datetime.now().isoformat(),
-                "file_name": uploaded_file.name,
-                "action": "Generate Executive Summary",
-                "result": summary
-            }
-            save_log_data(log_data)
 
         if st.button("Gather Pipeline Data"):
             action_text = "Gather Pipeline Data"
@@ -155,14 +131,6 @@ with st.sidebar:
             """
             crm_data = handle_prompt(st.session_state.extracted_text, crm_data_template)
             st.session_state.messages.append({"role": "assistant", "content": crm_data})
-            # Log the action
-            log_data = {
-                "timestamp": datetime.now().isoformat(),
-                "file_name": uploaded_file.name,
-                "action": "Gather Pipeline Data",
-                "result": crm_data
-            }
-            save_log_data(log_data)
 
         # Feedback section at the bottom
         st.markdown('---')
@@ -174,14 +142,6 @@ with st.sidebar:
             feedback_entry = {"rating": rating, "comment": comment}
             st.session_state.feedback.append(feedback_entry)
             st.success("Thank you for your feedback!")
-            # Log the feedback
-            log_data = {
-                "timestamp": datetime.now().isoformat(),
-                "file_name": uploaded_file.name,
-                "action": "Submit Feedback",
-                "feedback": feedback_entry
-            }
-            save_log_data(log_data)
 
 # Display chat messages
 for message in st.session_state.messages:
@@ -199,12 +159,3 @@ if prompt := st.chat_input("Search your RFP"):
     st.session_state.messages.append({"role": "assistant", "content": response})
     with st.chat_message("assistant"):
         st.write(response)
-    # Log the query and response
-    log_data = {
-        "timestamp": datetime.now().isoformat(),
-        "file_name": st.session_state.uploaded_file.name,
-        "action": "Search RFP",
-        "query": prompt,
-        "result": response
-    }
-    save_log_data(log_data)
