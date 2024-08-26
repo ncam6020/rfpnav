@@ -74,7 +74,7 @@ with st.sidebar:
             action_text = "Generate Executive Summary"
             st.session_state.messages.append({"role": "user", "content": action_text})
             summary_template = """
-            Please create a one-page executive summary of this RFP document, including key dates (issue date, response due date, and selection date), a project overview, the scope of work, and a list of deliverables. Ensure the summary is concise but captures all necessary details for a quick review. If the information is not found, respond with 'Sorry, I could not find that information.'
+            Please create a one-page executive summary of this RFP document, including key dates (issue date, response due date, and selection date), a project overview, the scope of work, and a list of deliverables. Ensure the summary is concise, strictly focused on the RFP content, and captures all necessary details for a quick review. Do not add any additional commentary or explanations.
 
             RFP Document Text:
             {combined_text}
