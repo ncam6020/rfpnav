@@ -4,8 +4,6 @@ import streamlit as st
 
 # Load the OpenAI API key from secrets
 api_key = st.secrets["OPENAI_API_KEY"]
-
-# Use the API key
 openai.api_key = api_key
 
 # Set up the page configuration
@@ -14,9 +12,12 @@ st.set_page_config(page_title="RFP Navigator", page_icon="🧭")
 # Initialize session state variables if they don't exist
 if "messages" not in st.session_state:
     st.session_state.messages = [{"role": "assistant", "content": "How can I help navigate your RFP?"}]
-
 if "history" not in st.session_state:
-    st.session_state["history"] = []
+    st.session_state.history = []
+if "extracted_text" not in st.session_state:
+    st.session_state.extracted_text = ""
+if "feedback" not in st.session_state:
+    st.session_state.feedback = []
 
 # Function to extract text from uploaded PDF
 def extract_text_from_pdf(file_content):
@@ -34,16 +35,20 @@ def split_text_into_chunks(text, chunk_size=1500):
 
 # General function to handle any prompt
 def handle_prompt(text, prompt_template):
-    combined_text = " ".join(split_text_into_chunks(text, chunk_size=1500))
+    combined_text = " ".join(split_text_into_chunks(text))
     prompt = prompt_template.format(combined_text=combined_text)
-    response = openai.ChatCompletion.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "system", "content": "Enable executives at Perkins&Will to swiftly and accurately analyze RFP documents, highlighting crucial information needed for go/no-go decisions and facilitating the initial steps of proposal development."},
-                  {"role": "user", "content": prompt}],
-        max_tokens=1024,
-        temperature=0.1  # Lowered temperature for precise and document-specific responses
-    )
-    return response['choices'][0]['message']['content'].strip()
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "system", "content": "Enable executives at Perkins&Will to swiftly and accurately analyze RFP documents, highlighting crucial information needed for go/no-go decisions and facilitating the initial steps of proposal development."},
+                      {"role": "user", "content": prompt}],
+            max_tokens=1024,
+            temperature=0.1  # Lowered temperature for precise and document-specific responses
+        )
+        return response['choices'][0]['message']['content'].strip()
+    except Exception as e:
+        st.error(f"An error occurred: {str(e)}")
+        return "An error occurred while processing the request."
 
 # Sidebar for OpenAI API key, PDF uploader, and feedback
 with st.sidebar:
@@ -52,8 +57,8 @@ with st.sidebar:
     uploaded_file = st.file_uploader("Upload your PDF", type=["pdf"], key="file_uploader")
 
     if uploaded_file:
-        # Extract text from the PDF
-        extracted_text = extract_text_from_pdf(uploaded_file.read())
+        # Extract text from the PDF and store it in session state
+        st.session_state.extracted_text = extract_text_from_pdf(uploaded_file.read())
 
         # Title for the key actions
         st.markdown('---')
@@ -68,7 +73,7 @@ with st.sidebar:
             RFP Document Text:
             {combined_text}
             """
-            summary = handle_prompt(extracted_text, summary_template)
+            summary = handle_prompt(st.session_state.extracted_text, summary_template)
             st.session_state.messages.append({"role": "assistant", "content": summary})
 
         if st.button("Gather Pipeline Data"):
@@ -95,7 +100,7 @@ with st.sidebar:
             RFP Document Text:
             {combined_text}
             """
-            crm_data = handle_prompt(extracted_text, crm_data_template)
+            crm_data = handle_prompt(st.session_state.extracted_text, crm_data_template)
             st.session_state.messages.append({"role": "assistant", "content": crm_data})
 
         # Feedback section at the bottom
@@ -105,9 +110,9 @@ with st.sidebar:
         comment = st.text_area("Additional comments", placeholder="Enter your feedback here...", key="feedback_comment")
 
         if st.button("Submit Feedback"):
-            st.write("Thank you for your feedback!")
-            st.write(f"Rating: {rating}")
-            st.write(f"Comment: {comment}")
+            feedback_entry = {"rating": rating, "comment": comment}
+            st.session_state.feedback.append(feedback_entry)
+            st.success("Thank you for your feedback!")
 
 # Display chat messages
 for message in st.session_state.messages:
@@ -121,7 +126,7 @@ if prompt := st.chat_input("Search your RFP"):
         st.write(prompt)
 
     # Generate response from OpenAI
-    response = handle_prompt(extracted_text, f"Based on the RFP document text provided below, please answer the following query: {prompt}\n\nRFP Document Text:\n{{combined_text}}")
+    response = handle_prompt(st.session_state.extracted_text, f"Based on the RFP document text provided below, please answer the following query: {prompt}\n\nRFP Document Text:\n{{combined_text}}")
     st.session_state.messages.append({"role": "assistant", "content": response})
     with st.chat_message("assistant"):
         st.write(response)
