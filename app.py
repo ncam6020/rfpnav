@@ -77,7 +77,7 @@ with st.sidebar:
             st.session_state.messages.append({"role": "assistant", "content": summary})
 
         if st.button("Gather Pipeline Data"):
-            action_text = "Gather Data"
+            action_text = "Gather Pipeline Data"
             st.session_state.messages.append({"role": "user", "content": action_text})
             crm_data_template = """
             Extract and present the following key data points from this RFP document in a table format for CRM entry:
