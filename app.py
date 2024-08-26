@@ -74,11 +74,11 @@ with st.sidebar:
             action_text = "Generate Executive Summary"
             st.session_state.messages.append({"role": "user", "content": action_text})
            summary_template = """
-Please create a one-page executive summary of this RFP document, focusing on how the project aligns with Perkins&Will's core values: Design Excellence, Living Design, Sustainability, Resilience, Research, Diversity and Inclusion, Social Purpose, Well-Being, and Technology. Include key dates (issue date, response due date, and selection date), a project overview, the scope of work, a list of deliverables, and any relevant information that aligns with our purpose of creating places where humanity thrives in harmony with nature.
+            Please create a one-page executive summary of this RFP document, focusing on how the project aligns with Perkins&Will's core values: Design Excellence, Living Design, Sustainability, Resilience, Research, Diversity and Inclusion, Social Purpose, Well-Being, and Technology. Include key dates (issue date, response due date, and selection date), a project overview, the scope of work, a list of deliverables, and any relevant information that aligns with our purpose of creating places where humanity thrives in harmony with nature.
 
-RFP Document Text:
-{combined_text}
-"""
+            RFP Document Text:
+            {combined_text}
+            """
 
             summary = handle_prompt(st.session_state.extracted_text, summary_template)
             st.session_state.messages.append({"role": "assistant", "content": summary})
