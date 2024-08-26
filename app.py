@@ -6,7 +6,7 @@ import streamlit as st
 api_key = st.secrets["OPENAI_API_KEY"]
 openai.api_key = api_key
 
-# Set up the page configuration
+# Set up the page configurations
 st.set_page_config(page_title="RFP Navigator", page_icon="🧭")
 
 # Initialize session state variables if they don't exist
