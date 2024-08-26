@@ -81,25 +81,30 @@ with st.sidebar:
             st.session_state.messages.append({"role": "user", "content": action_text})
             crm_data_template = """
             Extract and present the following key data points from this RFP document in a table format for CRM entry:
-            - RFP Issue Date
-            - RFP Response Due Date
-            - Primary Contact (name, title, email, and phone)
-            - Secondary Contact
-            - Project Name
-            - Locations
-            - Scope of Services
-            - Project Schedule Milestones
-            - Minimum Qualifications
-            - Evaluation Criteria
-            - Preproposal Conference
-            - Submission Requirements
-            - Key Strategic Goals
-            - CRM Tagging
-            - Additional Information
+- Opportunity Name
+- Primary Practice (select from: Branded Environments, Corporate and Commercial, Corporate Interiors, Cultural and Civic, Health, Higher Education, Hospitality, K-12 Education, Landscape Architecture, Planning&Strategies, Science and Technology, Single Family Residential, Sports Recreation and Entertainment, Transportation, Urban Design, Unknown / Other)
+- Discipline (select from: Arch/Interior Design, Urban Design, Landscape Arch, Advisory Services, Branded Environments, Unknown / Other)
+- Client Name
+- City
+- Country
+- RFP Release Date
+- Proposal Due Date
+- Interview Date
+- Selection Date
+- Design Start Date
+- Design Completion Date
+- Construction Start Date
+- Construction Completion Date
+- Project Description
+- Scopes (select from: New, Renovation, Addition, Building Repositioning, Competition, Infrastructure, Master Plan, Planning, Programming, Replacement, Study, Unknown / Other)
+- Program Type (select from: Civic and Cultural, Corporate and Commercial, Sports, Recreation + Entertainment, Education, Residential, Science + Technology, Transportation, Misc, Urban Design, Landscape Architecture, Government, Social Purpose, Health, Unknown / Other)
+- Delivery Type
+- Estimated Program Area
+- Estimated Budget
 
-            RFP Document Text:
-            {combined_text}
-            """
+RFP Document Text:
+{combined_text}
+"""
             crm_data = handle_prompt(st.session_state.extracted_text, crm_data_template)
             st.session_state.messages.append({"role": "assistant", "content": crm_data})
 
