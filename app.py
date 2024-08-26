@@ -63,27 +63,30 @@ with st.sidebar:
     uploaded_file = st.file_uploader("Upload your PDF", type=["pdf"], key="file_uploader")
 
     if uploaded_file:
-        # Extract text from the PDF and store it in session state
-        st.session_state.extracted_text = extract_text_from_pdf(uploaded_file.read())
+    # Extract text from the PDF and store it in session state
+    st.session_state.extracted_text = extract_text_from_pdf(uploaded_file.read())
 
-        # Title for the key actions
-        st.markdown('---')
-        st.subheader("**Key Actions**")
+    # Title for the key actions
+    st.markdown('---')
+    st.subheader("**Key Actions**")
 
-        if st.button("Generate Executive Summary"):
-            action_text = "Generate Executive Summary"
-            st.session_state.messages.append({"role": "user", "content": action_text})
-           summary_template = """
-            Please create a one-page executive summary of this RFP document, focusing on how the project aligns with Perkins&Will's core values: Design Excellence, Living Design, Sustainability, Resilience, Research, Diversity and Inclusion, Social Purpose, Well-Being, and Technology. Include key dates (issue date, response due date, and selection date), a project overview, the scope of work, a list of deliverables, and any relevant information that aligns with our purpose of creating places where humanity thrives in harmony with nature.
+    if st.button("Generate Executive Summary"):
+        action_text = "Generate Executive Summary"
+        st.session_state.messages.append({"role": "user", "content": action_text})
+        
+        summary_template = """
+        Please create a one-page executive summary of this RFP document, focusing on how the project aligns with Perkins&Will's core values: Design Excellence, Living Design, Sustainability, Resilience, Research, Diversity and Inclusion, Social Purpose, Well-Being, and Technology. Include key dates (issue date, response due date, and selection date), a project overview, the scope of work, a list of deliverables, and any relevant information that aligns with our purpose of creating places where humanity thrives in harmony with nature.
 
-            RFP Document Text:
-            {combined_text}
-            """
+        RFP Document Text:
+        {combined_text}
+        """
 
-            summary = handle_prompt(st.session_state.extracted_text, summary_template)
-            st.session_state.messages.append({"role": "assistant", "content": summary})
+        summary = handle_prompt(st.session_state.extracted_text, summary_template)
+        st.session_state.messages.append({"role": "assistant", "content": summary})
 
-        if st.button("Gather Pipeline Data"):
+    if st.button("Gather Pipeline Data"):
+        # The rest of the code for this button goes here
+
             action_text = "Gather Pipeline Data"
             st.session_state.messages.append({"role": "user", "content": action_text})
             crm_data_template = """
