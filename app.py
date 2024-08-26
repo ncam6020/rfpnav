@@ -1,12 +1,15 @@
 import openai
 import fitz  # PyMuPDF
 import streamlit as st
+import json
+import os
+from datetime import datetime
 
 # Load the OpenAI API key from secrets
 api_key = st.secrets["OPENAI_API_KEY"]
 openai.api_key = api_key
 
-# Set up the page configurations
+# Set up the page configuration
 st.set_page_config(page_title="RFP Navigator", page_icon="🧭")
 
 # Initialize session state variables if they don't exist
@@ -18,8 +21,8 @@ if "extracted_text" not in st.session_state:
     st.session_state.extracted_text = ""
 if "feedback" not in st.session_state:
     st.session_state.feedback = []
-if "uploaded_file" not in st.session_state:
-    st.session_state.uploaded_file = None
+if "log_data" not in st.session_state:
+    st.session_state.log_data = []
 
 # Function to extract text from uploaded PDF
 def extract_text_from_pdf(file_content):
@@ -53,10 +56,37 @@ def handle_prompt(text, prompt_template):
             max_tokens=1024,
             temperature=0.1  # Lowered temperature for precise and document-specific responses
         )
-        return response['choices'][0]['message']['content'].strip()
+        result = response['choices'][0]['message']['content'].strip()
+        
+        # Log the query and response
+        log_entry = {
+            "timestamp": datetime.now().isoformat(),
+            "prompt": prompt,
+            "response": result
+        }
+        st.session_state.log_data.append(log_entry)
+
+        return result
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
         return "An error occurred while processing the request."
+
+# Function to save log data to a JSON file
+def save_log_data():
+    log_file = "rfp_navigator_logs.json"
+    if os.path.exists(log_file):
+        with open(log_file, "r") as file:
+            data = json.load(file)
+    else:
+        data = []
+
+    data.extend(st.session_state.log_data)
+
+    with open(log_file, "w") as file:
+        json.dump(data, file, indent=4)
+
+    # Clear the session log data after saving
+    st.session_state.log_data = []
 
 # Sidebar for OpenAI API key, PDF uploader, and feedback
 with st.sidebar:
@@ -76,6 +106,13 @@ with st.sidebar:
 
         # Extract text from the PDF and store it in session state
         st.session_state.extracted_text = extract_text_from_pdf(uploaded_file.read())
+
+        # Log the PDF upload event
+        st.session_state.log_data.append({
+            "timestamp": datetime.now().isoformat(),
+            "event": "PDF uploaded",
+            "file_name": uploaded_file.name
+        })
 
         # Title for the key actions
         st.markdown('---')
@@ -143,6 +180,9 @@ with st.sidebar:
             st.session_state.feedback.append(feedback_entry)
             st.success("Thank you for your feedback!")
 
+        # Save log data when the session ends
+        save_log_data()
+
 # Display chat messages
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
@@ -159,3 +199,6 @@ if prompt := st.chat_input("Search your RFP"):
     st.session_state.messages.append({"role": "assistant", "content": response})
     with st.chat_message("assistant"):
         st.write(response)
+
+    # Save log data when a query is made
+    save_log_data()
