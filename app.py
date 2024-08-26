@@ -41,7 +41,7 @@ def handle_prompt(text, prompt_template):
         messages=[{"role": "system", "content": "Enable executives at Perkins&Will to swiftly and accurately analyze RFP documents, highlighting crucial information needed for go/no-go decisions and facilitating the initial steps of proposal development."},
                   {"role": "user", "content": prompt}],
         max_tokens=1024,
-        temperature=0.5
+        temperature=0.1  # Lowered temperature for precise and document-specific responses
     )
     return response['choices'][0]['message']['content'].strip()
 
