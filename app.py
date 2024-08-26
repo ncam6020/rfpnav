@@ -18,6 +18,8 @@ if "extracted_text" not in st.session_state:
     st.session_state.extracted_text = ""
 if "feedback" not in st.session_state:
     st.session_state.feedback = []
+if "uploaded_file" not in st.session_state:
+    st.session_state.uploaded_file = None
 
 # Function to extract text from uploaded PDF
 def extract_text_from_pdf(file_content):
@@ -60,9 +62,18 @@ def handle_prompt(text, prompt_template):
 with st.sidebar:
     st.title("RFP Navigator 🧭")
     st.markdown('---')  # Add horizontal line after the title
+
+    # PDF uploader with single file check
     uploaded_file = st.file_uploader("Upload your PDF", type=["pdf"], key="file_uploader")
 
     if uploaded_file:
+        # Clear previous file if a new one is uploaded
+        if st.session_state.uploaded_file and st.session_state.uploaded_file.name != uploaded_file.name:
+            st.session_state.extracted_text = ""
+            st.session_state.messages = [{"role": "assistant", "content": "How can I help navigate your RFP?"}]
+        
+        st.session_state.uploaded_file = uploaded_file
+
         # Extract text from the PDF and store it in session state
         st.session_state.extracted_text = extract_text_from_pdf(uploaded_file.read())
 
