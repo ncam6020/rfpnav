@@ -71,7 +71,7 @@ with st.sidebar:
             summary = handle_prompt(extracted_text, summary_template)
             st.session_state.messages.append({"role": "assistant", "content": summary})
 
-        if st.button("Gather Data"):
+        if st.button("Gather Pipeline Data"):
             action_text = "Gather Data"
             st.session_state.messages.append({"role": "user", "content": action_text})
             crm_data_template = """
