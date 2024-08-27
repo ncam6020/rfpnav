@@ -28,7 +28,7 @@ def log_to_google_sheets(pdf_name, action, result, temperature=0.2, feedback=Non
 
 # Initialize session state variables if they don't exist
 if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": "Please upload your RFP on the left sidebar."}]
+    st.session_state.messages = []
 if "history" not in st.session_state:
     st.session_state.history = []
 if "extracted_text" not in st.session_state:
@@ -83,13 +83,18 @@ def handle_prompt(pdf_name, text, prompt_template):
         st.error(f"An error occurred: {str(e)}")
         return "An error occurred while processing the request."
 
-# Sidebar for PDF uploader and feedback
+# Sidebar for PDF uploader
 with st.sidebar:
     st.title("RFP Navigator 🧭")
     st.markdown('---')
     uploaded_file = st.file_uploader("Upload your PDF", type=["pdf"], key="file_uploader")
 
-if uploaded_file:
+# Main section to display either the message or the chatbot
+if not uploaded_file:
+    # Display initial message with title and icon
+    st.markdown("<h2 style='text-align: center;'>RFP Navigator 🧭</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; font-size: 18px;'>Please upload your RFP on the left sidebar.</p>", unsafe_allow_html=True)
+else:
     # Extract text from the PDF and store it in session state
     st.session_state.extracted_text = extract_text_from_pdf(uploaded_file.read())
     pdf_name = uploaded_file.name  # Capture the file name
@@ -165,7 +170,7 @@ if uploaded_file:
             st.write(message["content"])
 
             # Show thumbs up/down buttons only if it's not the initial "upload RFP" message
-            if message["role"] == "assistant" and message["content"] != "Please upload your RFP on the left sidebar.":
+            if message["role"] == "assistant":
                 # Display thumbs-up and thumbs-down side by side in the same column with reduced gap
                 col1, col2 = st.columns([0.08, 1])
                 with col1:
@@ -177,7 +182,3 @@ if uploaded_file:
                         st.session_state.feedback[message['content']] = "Thumbs Down"
                         log_to_google_sheets(pdf_name, message["content"], "Thumbs Down")
 
-else:
-    # Display initial message with title and icon
-    st.markdown("<h2 style='text-align: center;'>RFP Navigator 🧭</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; font-size: 18px;'>Please upload your RFP on the left sidebar.</p>", unsafe_allow_html=True)
