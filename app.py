@@ -1,6 +1,6 @@
 # Initialize session state variables if they don't exist
 if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": "Please upload your RFP on the left sidebar"}]
+    st.session_state.messages = [{"role": "assistant", "content": "Please upload your RFP on the left sidebar."}]
 if "history" not in st.session_state:
     st.session_state.history = []
 if "extracted_text" not in st.session_state:
@@ -26,7 +26,7 @@ def split_text_into_chunks(text, chunk_size=1500):
 def get_system_message():
     return {
         "role": "system",
-        "content": "Enable executives at Perkins&Will to swiftly and accurately analyze RFP documents, highlighting crucial information needed for go/no-go decisions and facilitating the initial steps of proposal development. If you cannot find the required information, respond with 'Sorry, I could not find any thing about that.'"
+        "content": "Enable executives at Perkins&Will to swiftly and accurately analyze RFP documents, highlighting crucial information needed for go/no-go decisions and facilitating the initial steps of proposal development. If you cannot find the required information, respond with 'Sorry, I could not find anything about that.'"
     }
 
 # General function to handle any prompt
@@ -136,7 +136,7 @@ for i, message in enumerate(st.session_state.messages):
     with st.chat_message(message["role"]):
         st.write(message["content"])
 
-        # Show thumbs up/down buttons only after a response is generated
+        # Show thumbs up/down buttons only if it's not the initial "upload RFP" message
         if message["role"] == "assistant" and i > 0:
             # Display thumbs-up and thumbs-down side by side in the same column with reduced gap
             col1, col2 = st.columns([0.08, 1])
