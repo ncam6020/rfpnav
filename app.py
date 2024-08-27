@@ -1,13 +1,30 @@
 import openai
 import fitz  # PyMuPDF
 import streamlit as st
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+from datetime import datetime
 
 # Load the OpenAI API key from secrets
 api_key = st.secrets["OPENAI_API_KEY"]
 openai.api_key = api_key
 
-# Set up the page configurations
+# Set up the page configuration
 st.set_page_config(page_title="RFP Navigator", page_icon="🧭")
+
+# Initialize Google Sheets client
+def connect_to_google_sheets():
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    creds = ServiceAccountCredentials.from_json_keyfile_name('gcp_credentials.json', scope)
+    client = gspread.authorize(creds)
+    sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/1W5JmN2rVzvWVWS9NW0YPuCZUil-_uIVKHS2Je34JvIY/edit?usp=sharing").sheet1
+    return sheet
+
+sheet = connect_to_google_sheets()
+
+def log_to_google_sheets(pdf_name, action, result, feedback=None):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    sheet.append_row([timestamp, pdf_name, action, result, feedback])
 
 # Initialize session state variables if they don't exist
 if "messages" not in st.session_state:
@@ -17,9 +34,7 @@ if "history" not in st.session_state:
 if "extracted_text" not in st.session_state:
     st.session_state.extracted_text = ""
 if "feedback" not in st.session_state:
-    st.session_state.feedback = []
-if "uploaded_file" not in st.session_state:
-    st.session_state.uploaded_file = None
+    st.session_state.feedback = {}
 
 # Function to extract text from uploaded PDF
 def extract_text_from_pdf(file_content):
@@ -43,7 +58,7 @@ def get_system_message():
     }
 
 # General function to handle any prompt
-def handle_prompt(text, prompt_template):
+def handle_prompt(pdf_name, text, prompt_template):
     combined_text = " ".join(split_text_into_chunks(text))
     prompt = prompt_template.format(combined_text=combined_text)
     try:
@@ -53,31 +68,25 @@ def handle_prompt(text, prompt_template):
             max_tokens=1024,
             temperature=0.1  # Lowered temperature for precise and document-specific responses
         )
-        return response['choices'][0]['message']['content'].strip()
+        result = response['choices'][0]['message']['content'].strip()
+        st.session_state.feedback[result] = None  # Initialize feedback state
+        log_to_google_sheets(pdf_name, prompt, result)  # Log the action and result to Google Sheets
+        return result
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
         return "An error occurred while processing the request."
 
-# Sidebar for OpenAI API key, PDF uploader, and feedback
+# Sidebar for PDF uploader and feedback
 with st.sidebar:
     st.title("RFP Navigator 🧭")
-    st.markdown('---')  # Add horizontal line after the title
-
-    # PDF uploader with single file check
+    st.markdown('---')
     uploaded_file = st.file_uploader("Upload your PDF", type=["pdf"], key="file_uploader")
 
     if uploaded_file:
-        # Clear previous file if a new one is uploaded
-        if st.session_state.uploaded_file and st.session_state.uploaded_file.name != uploaded_file.name:
-            st.session_state.extracted_text = ""
-            st.session_state.messages = [{"role": "assistant", "content": "How can I help navigate your RFP?"}]
-        
-        st.session_state.uploaded_file = uploaded_file
-
         # Extract text from the PDF and store it in session state
         st.session_state.extracted_text = extract_text_from_pdf(uploaded_file.read())
+        pdf_name = uploaded_file.name  # Capture the file name
 
-        # Title for the key actions
         st.markdown('---')
         st.subheader("**Key Actions**")
 
@@ -92,7 +101,7 @@ with st.sidebar:
             {combined_text}
             """
 
-            summary = handle_prompt(st.session_state.extracted_text, summary_template)
+            summary = handle_prompt(pdf_name, st.session_state.extracted_text, summary_template)
             st.session_state.messages.append({"role": "assistant", "content": summary})
 
         if st.button("Gather Pipeline Data"):
@@ -129,24 +138,25 @@ with st.sidebar:
             RFP Document Text:
             {combined_text}
             """
-            crm_data = handle_prompt(st.session_state.extracted_text, crm_data_template)
+            crm_data = handle_prompt(pdf_name, st.session_state.extracted_text, crm_data_template)
             st.session_state.messages.append({"role": "assistant", "content": crm_data})
 
-        # Feedback section at the bottom
-        st.markdown('---')
-        st.subheader("Was this helpful?")
-        rating = st.radio("Rate the helpfulness:", options=[1, 2, 3, 4, 5], index=None, horizontal=True, key="feedback_rating")
-        comment = st.text_area("Additional comments", placeholder="Enter your feedback here...", key="feedback_comment")
-
-        if st.button("Submit Feedback"):
-            feedback_entry = {"rating": rating, "comment": comment}
-            st.session_state.feedback.append(feedback_entry)
-            st.success("Thank you for your feedback!")
-
-# Display chat messages
+# Display chat messages and add thumbs up/down buttons
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
+
+        if message["role"] == "assistant":
+            # Display thumbs-up and thumbs-down side by side in the same column with reduced gap
+            col1, col2 = st.columns([0.08, 1])
+            with col1:
+                if st.button("👍", key=f"thumbs_up_{message['content']}", help="Was this Helpful?"):
+                    st.session_state.feedback[message['content']] = "Thumbs Up"
+                    log_to_google_sheets(pdf_name, message["content"], "Thumbs Up")
+            with col2:
+                if st.button("👎", key=f"thumbs_down_{message['content']}", help="Was this Helpful?"):
+                    st.session_state.feedback[message['content']] = "Thumbs Down"
+                    log_to_google_sheets(pdf_name, message["content"], "Thumbs Down")
 
 # User-provided prompt
 if prompt := st.chat_input("Search your RFP"):
@@ -155,7 +165,7 @@ if prompt := st.chat_input("Search your RFP"):
         st.write(prompt)
 
     # Generate response from OpenAI
-    response = handle_prompt(st.session_state.extracted_text, f"Based on the RFP document text provided below, please answer the following query: {prompt}\n\nRFP Document Text:\n{{combined_text}}")
+    response = handle_prompt(pdf_name, st.session_state.extracted_text, f"Based on the RFP document text provided below, please answer the following query: {prompt}\n\nRFP Document Text:\n{{combined_text}}")
     st.session_state.messages.append({"role": "assistant", "content": response})
     with st.chat_message("assistant"):
         st.write(response)
