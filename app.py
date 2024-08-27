@@ -164,42 +164,47 @@ with st.sidebar:
             crm_data = handle_prompt(pdf_name, st.session_state.extracted_text, crm_data_template)
             st.session_state.messages.append({"role": "assistant", "content": crm_data})
 
-# Display chat messages and add thumbs up/down buttons
-for i, message in enumerate(st.session_state.messages):
-    with st.chat_message(message["role"]):
-        st.write(message["content"])
+# Conditional rendering based on whether a file is uploaded
+if not uploaded_file:
+    st.title("RFP Navigator 🧭")
+    st.write("Please upload your RFP in the left sidebar to begin.")
+else:
+    # Display chat messages and add thumbs up/down buttons
+    for i, message in enumerate(st.session_state.messages):
+        with st.chat_message(message["role"]):
+            st.write(message["content"])
 
-        if message["role"] == "assistant":
-            # Display thumbs-up and thumbs-down side by side in the same column with reduced gap
+            if message["role"] == "assistant":
+                # Display thumbs-up and thumbs-down side by side in the same column with reduced gap
+                col1, col2 = st.columns([0.08, 1])
+                with col1:
+                    if st.button("👍", key=f"thumbs_up_{i}", help="Was this Helpful?"):
+                        st.session_state.feedback[message['content']] = "Thumbs Up"
+                        log_to_google_sheets(pdf_name, message["content"], "Thumbs Up")
+                with col2:
+                    if st.button("👎", key=f"thumbs_down_{i}", help="Was this Helpful?"):
+                        st.session_state.feedback[message['content']] = "Thumbs Down"
+                        log_to_google_sheets(pdf_name, message["content"], "Thumbs Down")
+
+    # User-provided prompt
+    if prompt := st.chat_input("Search your RFP"):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.write(prompt)
+
+        # Generate response from OpenAI
+        response = handle_prompt(pdf_name, st.session_state.extracted_text, f"Based on the RFP document text provided below, please answer the following query: {prompt}\n\nRFP Document Text:\n{{combined_text}}")
+        st.session_state.messages.append({"role": "assistant", "content": response})
+        with st.chat_message("assistant"):
+            st.write(response)
+
+            # Ensure feedback buttons appear for text box responses
             col1, col2 = st.columns([0.08, 1])
             with col1:
-                if st.button("👍", key=f"thumbs_up_{i}", help="Was this Helpful?"):
-                    st.session_state.feedback[message['content']] = "Thumbs Up"
-                    log_to_google_sheets(pdf_name, message["content"], "Thumbs Up")
+                if st.button("👍", key=f"thumbs_up_{len(st.session_state.messages)}", help="Was this Helpful?"):
+                    st.session_state.feedback[response] = "Thumbs Up"
+                    log_to_google_sheets(pdf_name, response, "Thumbs Up")
             with col2:
-                if st.button("👎", key=f"thumbs_down_{i}", help="Was this Helpful?"):
-                    st.session_state.feedback[message['content']] = "Thumbs Down"
-                    log_to_google_sheets(pdf_name, message["content"], "Thumbs Down")
-
-# User-provided prompt
-if prompt := st.chat_input("Search your RFP"):
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.write(prompt)
-
-    # Generate response from OpenAI
-    response = handle_prompt(pdf_name, st.session_state.extracted_text, f"Based on the RFP document text provided below, please answer the following query: {prompt}\n\nRFP Document Text:\n{{combined_text}}")
-    st.session_state.messages.append({"role": "assistant", "content": response})
-    with st.chat_message("assistant"):
-        st.write(response)
-
-        # Ensure feedback buttons appear for text box responses
-        col1, col2 = st.columns([0.08, 1])
-        with col1:
-            if st.button("👍", key=f"thumbs_up_{len(st.session_state.messages)}", help="Was this Helpful?"):
-                st.session_state.feedback[response] = "Thumbs Up"
-                log_to_google_sheets(pdf_name, response, "Thumbs Up")
-        with col2:
-            if st.button("👎", key=f"thumbs_down_{len(st.session_state.messages)}", help="Was this Helpful?"):
-                st.session_state.feedback[response] = "Thumbs Down"
-                log_to_google_sheets(pdf_name, response, "Thumbs Down")
+                if st.button("👎", key=f"thumbs_down_{len(st.session_state.messages)}", help="Was this Helpful?"):
+                    st.session_state.feedback[response] = "Thumbs Down"
+                    log_to_google_sheets(pdf_name, response, "Thumbs Down")
