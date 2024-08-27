@@ -22,9 +22,9 @@ def connect_to_google_sheets():
 
 sheet = connect_to_google_sheets()
 
-def log_to_google_sheets(pdf_name, action, result, feedback=None):
+def log_to_google_sheets(pdf_name, action, result, temperature=0.2, feedback=None):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    sheet.append_row([timestamp, pdf_name, action, result, feedback])
+    sheet.append_row([timestamp, pdf_name, action, result, temperature, feedback])
 
 # Initialize session state variables if they don't exist
 if "messages" not in st.session_state:
@@ -54,44 +54,41 @@ def split_text_into_chunks(text, chunk_size=1500):
 def get_system_message():
     return {
         "role": "system",
-        "content": "Enable executives at Perkins&Will to swiftly and accurately analyze RFP documents, highlighting crucial information needed for go/no-go decisions and facilitating the initial steps of proposal development. If you cannot find the required information, respond with 'Sorry, I could not find that information.'"
+        "content": "Enable executives at Perkins&Will to swiftly and accurately analyze RFP documents, highlighting crucial information needed for go/no-go decisions and facilitating the initial steps of proposal development. If you cannot find the required information, respond with 'Sorry, I could not find any thing about that.'"
     }
 
 # General function to handle any prompt
-def handle_prompt(pdf_name, text, prompt_template, temperature):
-    combined_text = " ".join(split_text_into_chunks(text))
-    prompt = prompt_template.format(combined_text=combined_text)
+def handle_prompt(pdf_name, text, prompt_template):
+    prompt = prompt_template.format(combined_text=" ".join(split_text_into_chunks(text)))
+    
     try:
         response = openai.ChatCompletion.create(
             model="gpt-4o-mini",
             messages=[get_system_message(), {"role": "user", "content": prompt}],
             max_tokens=1024,
-            temperature=temperature  # Use the temperature from the slider
+            temperature=0.2  # Default temperature set to 0.2
         )
         result = response['choices'][0]['message']['content'].strip()
-        st.session_state.feedback[result] = None  # Initialize feedback state
-        log_to_google_sheets(pdf_name, prompt, result)  # Log the action and result to Google Sheets
+
+        # Simplified condition to adjust response message
+        result = "This is what I could find." if result == "Sorry, I could not find that information." else result
+
+        # Logging and feedback initialization
+        st.session_state.feedback[result] = None
+        log_to_google_sheets(pdf_name, prompt, result)
+
         return result
+
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
         return "An error occurred while processing the request."
 
-# Sidebar for PDF uploader, temperature slider, and feedback
+# Sidebar for PDF uploader and feedback
 with st.sidebar:
     st.title("RFP Navigator 🧭")
     st.markdown('---')
     uploaded_file = st.file_uploader("Upload your PDF", type=["pdf"], key="file_uploader")
 
-    # Add temperature slider with hover text
-    temperature = st.slider(
-        "Set Temperature",
-        min_value=0.0,
-        max_value=1.0,
-        value=0.1,
-        step=0.05,
-        help="Temperature controls the randomness of the model's responses. Lower values (e.g., 0.1) make the output more focused and deterministic, while higher values (e.g., 1.0) make it more creative and varied."
-    )
-    
     if uploaded_file:
         # Extract text from the PDF and store it in session state
         st.session_state.extracted_text = extract_text_from_pdf(uploaded_file.read())
@@ -111,7 +108,7 @@ with st.sidebar:
             {combined_text}
             """
 
-            summary = handle_prompt(pdf_name, st.session_state.extracted_text, summary_template, temperature)
+            summary = handle_prompt(pdf_name, st.session_state.extracted_text, summary_template)
             st.session_state.messages.append({"role": "assistant", "content": summary})
 
         if st.button("Gather Pipeline Data"):
@@ -141,18 +138,29 @@ with st.sidebar:
             - Delivery Type (select from: Construction Manager at Risk (CMaR), Design Only, Design-Bid-Build, Design-Build, Integrated Project Delivery (IPD), Guaranteed Maximum Price (GMP), Joint Venture (JV), Public Private Partnership (P3), Other)
             - Estimated Program Area
             - Estimated Budget
-            - Sustainability Requirement
+            - Sustainability Requirement 
+            
+            # Additional information aligned with core values
+            - Design Excellence Opportunities
+            - Sustainability Initiatives
+            - Resilience Measures
+            - Innovation Potential
+            - Diversity and Inclusion Aspects
+            - Social Purpose Contributions
+            - Well-Being Factors
+            - Technological Integration Points
             
             If the information is not found, respond with 'Sorry, I could not find that information.'
 
             RFP Document Text:
             {combined_text}
             """
-            crm_data = handle_prompt(pdf_name, st.session_state.extracted_text, crm_data_template, temperature)
+
+            crm_data = handle_prompt(pdf_name, st.session_state.extracted_text, crm_data_template)
             st.session_state.messages.append({"role": "assistant", "content": crm_data})
 
 # Display chat messages and add thumbs up/down buttons
-for message in st.session_state.messages:
+for i, message in enumerate(st.session_state.messages):
     with st.chat_message(message["role"]):
         st.write(message["content"])
 
@@ -160,11 +168,11 @@ for message in st.session_state.messages:
             # Display thumbs-up and thumbs-down side by side in the same column with reduced gap
             col1, col2 = st.columns([0.08, 1])
             with col1:
-                if st.button("👍", key=f"thumbs_up_{message['content']}", help="Was this Helpful?"):
+                if st.button("👍", key=f"thumbs_up_{i}", help="Was this Helpful?"):
                     st.session_state.feedback[message['content']] = "Thumbs Up"
                     log_to_google_sheets(pdf_name, message["content"], "Thumbs Up")
             with col2:
-                if st.button("👎", key=f"thumbs_down_{message['content']}", help="Was this Helpful?"):
+                if st.button("👎", key=f"thumbs_down_{i}", help="Was this Helpful?"):
                     st.session_state.feedback[message['content']] = "Thumbs Down"
                     log_to_google_sheets(pdf_name, message["content"], "Thumbs Down")
 
@@ -175,7 +183,18 @@ if prompt := st.chat_input("Search your RFP"):
         st.write(prompt)
 
     # Generate response from OpenAI
-    response = handle_prompt(pdf_name, st.session_state.extracted_text, f"Based on the RFP document text provided below, please answer the following query: {prompt}\n\nRFP Document Text:\n{{combined_text}}", temperature)
+    response = handle_prompt(pdf_name, st.session_state.extracted_text, f"Based on the RFP document text provided below, please answer the following query: {prompt}\n\nRFP Document Text:\n{{combined_text}}")
     st.session_state.messages.append({"role": "assistant", "content": response})
     with st.chat_message("assistant"):
         st.write(response)
+
+        # Ensure feedback buttons appear for text box responses
+        col1, col2 = st.columns([0.08, 1])
+        with col1:
+            if st.button("👍", key=f"thumbs_up_{len(st.session_state.messages)}", help="Was this Helpful?"):
+                st.session_state.feedback[response] = "Thumbs Up"
+                log_to_google_sheets(pdf_name, response, "Thumbs Up")
+        with col2:
+            if st.button("👎", key=f"thumbs_down_{len(st.session_state.messages)}", help="Was this Helpful?"):
+                st.session_state.feedback[response] = "Thumbs Down"
+                log_to_google_sheets(pdf_name, response, "Thumbs Down")
