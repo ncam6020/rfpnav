@@ -137,7 +137,7 @@ for i, message in enumerate(st.session_state.messages):
         st.write(message["content"])
 
         # Show thumbs up/down buttons only if it's not the initial "upload RFP" message
-        if message["role"] == "assistant" and i > 0:
+        if message["role"] == "assistant" and message["content"] != "Please upload your RFP on the left sidebar.":
             # Display thumbs-up and thumbs-down side by side in the same column with reduced gap
             col1, col2 = st.columns([0.08, 1])
             with col1:
