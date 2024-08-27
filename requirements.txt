@@ -1,3 +1,5 @@
 streamlit
 openai==0.28
 PyMuPDF
+gspread
+oauth2client
