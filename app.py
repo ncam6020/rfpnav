@@ -14,11 +14,17 @@ st.set_page_config(page_title="RFP Navigator", page_icon="🧭")
 
 # Initialize Google Sheets client
 def connect_to_google_sheets():
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_name('gcp_credentials.json', scope)
-    client = gspread.authorize(creds)
-    sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/1W5JmN2rVzvWVWS9NW0YPuCZUil-_uIVKHS2Je34JvIY/edit?usp=sharing").sheet1
-    return sheet
+    try:
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(
+            st.secrets["connections"]["gsheets"], 
+            scopes=["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+        )
+        client = gspread.authorize(creds)
+        sheet = client.open_by_url(st.secrets["connections"]["gsheets"]["spreadsheet"]).sheet1
+        return sheet
+    except Exception as e:
+        st.error(f"Failed to connect to Google Sheets: {e}")
+        st.stop()
 
 sheet = connect_to_google_sheets()
 
