@@ -1,34 +1,6 @@
-import openai
-import fitz  # PyMuPDF
-import streamlit as st
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-from datetime import datetime
-
-# Load the OpenAI API key from secrets
-api_key = st.secrets["OPENAI_API_KEY"]
-openai.api_key = api_key
-
-# Set up the page configuration
-st.set_page_config(page_title="RFP Navigator", page_icon="🧭")
-
-# Initialize Google Sheets client
-def connect_to_google_sheets():
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["connections"]["gsheets"], scopes=scope)
-    client = gspread.authorize(creds)
-    sheet = client.open_by_url(st.secrets["connections"]["gsheets"]["spreadsheet"]).sheet1
-    return sheet
-
-sheet = connect_to_google_sheets()
-
-def log_to_google_sheets(pdf_name, action, result, temperature=0.2, feedback=None):
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    sheet.append_row([timestamp, pdf_name, action, result, temperature, feedback])
-
 # Initialize session state variables if they don't exist
 if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": "How can I help navigate your RFP?"}]
+    st.session_state.messages = [{"role": "assistant", "content": "Please upload your RFP on the left sidebar"}]
 if "history" not in st.session_state:
     st.session_state.history = []
 if "extracted_text" not in st.session_state:
@@ -164,7 +136,8 @@ for i, message in enumerate(st.session_state.messages):
     with st.chat_message(message["role"]):
         st.write(message["content"])
 
-        if message["role"] == "assistant":
+        # Show thumbs up/down buttons only after a response is generated
+        if message["role"] == "assistant" and i > 0:
             # Display thumbs-up and thumbs-down side by side in the same column with reduced gap
             col1, col2 = st.columns([0.08, 1])
             with col1:
