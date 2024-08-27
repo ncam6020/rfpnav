@@ -24,11 +24,12 @@ sheet = connect_to_google_sheets()
 
 # Function to log data to Google Sheets
 def log_to_google_sheets(pdf_name, action, result, temperature=0.2, feedback=None):
-    max_cell_length = 50000
-    truncated_result = result[:max_cell_length]  # Truncate the result if it's too long
+    max_cell_length = 40000
+    if len(result) > max_cell_length:
+        result = result[:max_cell_length]  # Only keep the first 40,000 characters
 
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    sheet.append_row([timestamp, pdf_name, action, truncated_result, temperature, feedback])
+    sheet.append_row([timestamp, pdf_name, action, result, temperature, feedback])
 
 # Initialize session state variables if they don't exist
 if "messages" not in st.session_state:
