@@ -6,7 +6,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
 import re
 
-# Load the OpenAI API key from secrets
+## Load the OpenAI API key from secrets
 api_key = st.secrets["OPENAI_API_KEY"]
 openai.api_key = api_key
 
