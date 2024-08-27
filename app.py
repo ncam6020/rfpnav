@@ -14,17 +14,11 @@ st.set_page_config(page_title="RFP Navigator", page_icon="🧭")
 
 # Initialize Google Sheets client
 def connect_to_google_sheets():
-    try:
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(
-            st.secrets["connections"]["gsheets"], 
-            scopes=["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        )
-        client = gspread.authorize(creds)
-        sheet = client.open_by_url(st.secrets["connections"]["gsheets"]["spreadsheet"]).sheet1
-        return sheet
-    except Exception as e:
-        st.error(f"Failed to connect to Google Sheets: {e}")
-        st.stop()
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["connections"]["gsheets"], scopes=scope)
+    client = gspread.authorize(creds)
+    sheet = client.open_by_url(st.secrets["connections"]["gsheets"]["spreadsheet"]).sheet1
+    return sheet
 
 sheet = connect_to_google_sheets()
 
@@ -64,7 +58,7 @@ def get_system_message():
     }
 
 # General function to handle any prompt
-def handle_prompt(pdf_name, text, prompt_template):
+def handle_prompt(pdf_name, text, prompt_template, temperature):
     combined_text = " ".join(split_text_into_chunks(text))
     prompt = prompt_template.format(combined_text=combined_text)
     try:
@@ -72,7 +66,7 @@ def handle_prompt(pdf_name, text, prompt_template):
             model="gpt-4o-mini",
             messages=[get_system_message(), {"role": "user", "content": prompt}],
             max_tokens=1024,
-            temperature=0.1  # Lowered temperature for precise and document-specific responses
+            temperature=temperature  # Use the temperature from the slider
         )
         result = response['choices'][0]['message']['content'].strip()
         st.session_state.feedback[result] = None  # Initialize feedback state
@@ -82,12 +76,22 @@ def handle_prompt(pdf_name, text, prompt_template):
         st.error(f"An error occurred: {str(e)}")
         return "An error occurred while processing the request."
 
-# Sidebar for PDF uploader and feedback
+# Sidebar for PDF uploader, temperature slider, and feedback
 with st.sidebar:
     st.title("RFP Navigator 🧭")
     st.markdown('---')
     uploaded_file = st.file_uploader("Upload your PDF", type=["pdf"], key="file_uploader")
 
+    # Add temperature slider with hover text
+    temperature = st.slider(
+        "Set Temperature",
+        min_value=0.0,
+        max_value=1.0,
+        value=0.1,
+        step=0.05,
+        help="Temperature controls the randomness of the model's responses. Lower values (e.g., 0.1) make the output more focused and deterministic, while higher values (e.g., 1.0) make it more creative and varied."
+    )
+    
     if uploaded_file:
         # Extract text from the PDF and store it in session state
         st.session_state.extracted_text = extract_text_from_pdf(uploaded_file.read())
@@ -107,7 +111,7 @@ with st.sidebar:
             {combined_text}
             """
 
-            summary = handle_prompt(pdf_name, st.session_state.extracted_text, summary_template)
+            summary = handle_prompt(pdf_name, st.session_state.extracted_text, summary_template, temperature)
             st.session_state.messages.append({"role": "assistant", "content": summary})
 
         if st.button("Gather Pipeline Data"):
@@ -144,7 +148,7 @@ with st.sidebar:
             RFP Document Text:
             {combined_text}
             """
-            crm_data = handle_prompt(pdf_name, st.session_state.extracted_text, crm_data_template)
+            crm_data = handle_prompt(pdf_name, st.session_state.extracted_text, crm_data_template, temperature)
             st.session_state.messages.append({"role": "assistant", "content": crm_data})
 
 # Display chat messages and add thumbs up/down buttons
@@ -171,7 +175,7 @@ if prompt := st.chat_input("Search your RFP"):
         st.write(prompt)
 
     # Generate response from OpenAI
-    response = handle_prompt(pdf_name, st.session_state.extracted_text, f"Based on the RFP document text provided below, please answer the following query: {prompt}\n\nRFP Document Text:\n{{combined_text}}")
+    response = handle_prompt(pdf_name, st.session_state.extracted_text, f"Based on the RFP document text provided below, please answer the following query: {prompt}\n\nRFP Document Text:\n{{combined_text}}", temperature)
     st.session_state.messages.append({"role": "assistant", "content": response})
     with st.chat_message("assistant"):
         st.write(response)
