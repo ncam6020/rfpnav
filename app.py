@@ -11,7 +11,7 @@ api_key = st.secrets["OPENAI_API_KEY"]
 openai.api_key = api_key
 
 # Set up the page configuration
-st.set_page_config(page_title="RFP Navigator Debug", page_icon="🧭")
+st.set_page_config(page_title="RFP Navigator", page_icon="🧭")
 
 # Initialize Google Sheets client
 def connect_to_google_sheets():
@@ -58,7 +58,7 @@ if 'feedback' not in st.session_state:
 
 # Sidebar for PDF uploader and key actions
 with st.sidebar:
-    st.title("RFP Navigator Debug 🧭")
+    st.title("RFP Navigator 🧭")
     uploaded_file = st.file_uploader("Upload your PDF", type=["pdf"])
 
     if uploaded_file:
