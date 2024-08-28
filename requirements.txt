@@ -1,5 +1,5 @@
 streamlit
-openai==0.28
-PyMuPDF
+openai>=1.0.0
+pymupdf
 gspread
 oauth2client
