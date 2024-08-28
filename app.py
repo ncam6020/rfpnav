@@ -58,7 +58,7 @@ if 'feedback' not in st.session_state:
 
 # Sidebar for PDF uploader and key actions
 with st.sidebar:
-    st.title("RFP Navigator Debug 🧭")
+    st.title("RFP Navigator 🧭")
     uploaded_file = st.file_uploader("Upload your PDF", type=["pdf"])
 
     if uploaded_file:
@@ -181,7 +181,8 @@ st.title("RFP Navigator 🧭")
 
 # Initial screen when no PDF is uploaded
 if not uploaded_file:
-    st.write("Please load your RFP in the side window.\n\nRemember, this is Generative AI and Experimental.")
+    st.write("Please upload your RFP document in the sidebar to begin\n\n*Remember, this is Generative AI and Experimental.*")
+
 else:
     # Display chat messages and add thumbs up/down buttons
     for i, message in enumerate(st.session_state.messages):
