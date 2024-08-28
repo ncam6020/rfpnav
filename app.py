@@ -11,7 +11,7 @@ api_key = st.secrets["OPENAI_API_KEY"]
 openai.api_key = api_key
 
 # Set up the page configuration
-st.set_page_config(page_title="RFP Navigator Debug", page_icon="🧭")
+st.set_page_config(page_title="RFP Navigator", page_icon="🧭")
 
 # Initialize Google Sheets client
 def connect_to_google_sheets():
@@ -181,7 +181,7 @@ st.title("RFP Navigator 🧭")
 
 # Initial screen when no PDF is uploaded
 if not uploaded_file:
-    st.write("Please load your RFP in the side window.\n\nRemember, this is generative AI and is experimental.")
+    st.write("Please load your RFP in the side window.\n\nRemember, this is Generative AI and Experimental.")
 else:
     # Display chat messages and add thumbs up/down buttons
     for i, message in enumerate(st.session_state.messages):
