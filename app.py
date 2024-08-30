@@ -1,189 +1,38 @@
-import openai
-import fitz  # PyMuPDF
-import streamlit as st
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-from datetime import datetime
-import re
-
-# Load the OpenAI API key from secrets
-api_key = st.secrets["OPENAI_API_KEY"]
-openai.api_key = api_key
-
-# Set up the page configuration
-st.set_page_config(page_title="RFP Navigator", page_icon="🧭")
-
-# Initialize Google Sheets client
-def connect_to_google_sheets():
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["connections"]["gsheets"], scopes=scope)
-    client = gspread.authorize(creds)
-    sheet = client.open_by_url(st.secrets["connections"]["gsheets"]["spreadsheet"]).sheet1
-    return sheet
-
-sheet = connect_to_google_sheets()
-
-# Function to log query, response, and metadata to Google Sheets with truncation
-def log_to_google_sheets(email, pdf_name, action, result, temperature=0.2, feedback=None):
-    max_cell_length = 1000  # Limit any field text to 1,000 characters
-
-    # Clean and truncate the response text and action
-    cleaned_result = re.sub(r'[^\x00-\x7F]+', '', result)[:max_cell_length]
-    cleaned_action = re.sub(r'[^\x00-\x7F]+', '', action)[:max_cell_length]
-    cleaned_pdf_name = pdf_name[:max_cell_length]
-    cleaned_email = email[:max_cell_length]
-
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+# Button to generate pipeline data
+if st.button("Generate Pipeline Data"):
     try:
-        sheet.append_row([timestamp, cleaned_email, cleaned_pdf_name, cleaned_action, cleaned_result, temperature, feedback])
+        pipeline_template = """
+        Extract and present the following key data points from this RFP document in a table format for CRM entry:
+        [pipeline data fields...]
+        
+        RFP Document Text:
+        {extracted_text}
+        """
+
+        # Generate response using OpenAI's new SDK method
+        response = openai.Client().chat.completions.create(
+            model="gpt-4o-mini",  # Use a model you have access to
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": pipeline_template.format(extracted_text=st.session_state.extracted_text)}
+            ],
+            max_tokens=1024,
+            temperature=0.2,
+            top_p=1.0,
+            frequency_penalty=0.0,
+            presence_penalty=0.0
+        )
+
+        response_content = response.choices[0].message.content.strip()
+
+        # Append response to the chat history
+        st.session_state.messages.append({"role": "assistant", "content": response_content})
+
+        # Log the action to Google Sheets
+        log_to_google_sheets(st.session_state.email, uploaded_file.name, "Generate Pipeline Data", response_content)
+
     except Exception as e:
-        st.error(f"An error occurred while logging to Google Sheets: {str(e)}")
-
-# Function to extract text from uploaded PDF
-def extract_text_from_pdf(file_content):
-    doc = fitz.open(stream=file_content, filetype="pdf")
-    text = ""
-    for page in doc:
-        text += page.get_text()
-    return text
-
-# Function to count tokens in the extracted text
-def count_tokens(text):
-    return len(text.split())
-
-# Initialize session state for chat history, feedback, and email if they don't exist
-if 'messages' not in st.session_state:
-    st.session_state.messages = []
-if 'feedback' not in st.session_state:
-    st.session_state.feedback = {}
-if 'email' not in st.session_state:
-    st.session_state.email = ""
-
-# Sidebar for email input, PDF uploader, and key actions
-with st.sidebar:
-    st.title("RFP Navigator 🧭")
-    
-    # Email input field
-    st.session_state.email = st.text_input("Enter your email address so we can track feedback")
-
-    if st.session_state.email:
-        # PDF uploader
-        uploaded_file = st.file_uploader("Upload your PDF", type=["pdf"])
-
-        if uploaded_file:
-            # Extract text from the PDF and store it in session state
-            extracted_text = extract_text_from_pdf(uploaded_file.read())
-            token_count = count_tokens(extracted_text)
-            st.session_state.extracted_text = extracted_text
-
-            # Convert token count to thousands (k)
-            token_count_k = token_count / 1000
-
-            # Display success message with a hard return between text extracted and token count
-            st.success(f"PDF loaded and text extracted.\n\nToken count: {token_count_k:.1f}k/128k")
-
-            st.markdown('---')
-            st.subheader("**Key Actions**")
-
-            # Button to generate the executive summary
-            if st.button("Generate Executive Summary"):
-                try:
-                    summary_template = """
-                    Create an executive summary of this RFP document tailored for an executive architectural designer. Include key dates (issue date, response due date, and selection date), a project overview, the scope of work, a list of deliverables, Selection Criteria, and other important information. Conclude with a brief one-sentence summary identifying specific areas in the RFP where it aligns with Perkins&Will's core values, such as Design Excellence, Living Design, Sustainability, Resilience, Research, Diversity and Inclusion, Social Purpose, Well-Being, and Technology, with specific examples from the document.
-
-                    RFP Document Text:
-                    {extracted_text}
-                    """
-
-                    # Generate response using OpenAI's new SDK method
-                    response = openai.Client().chat.completions.create(
-                        model="gpt-4o-mini",  # Use a model you have access to
-                        messages=[
-                            {"role": "system", "content": "You are a helpful assistant."},
-                            {"role": "user", "content": summary_template.format(extracted_text=st.session_state.extracted_text)}
-                        ],
-                        max_tokens=1024,
-                        temperature=0.2,
-                        top_p=1.0,
-                        frequency_penalty=0.0,
-                        presence_penalty=0.0
-                    )
-
-                    response_content = response.choices[0].message.content.strip()
-                    st.session_state.messages.append({"role": "assistant", "content": response_content})
-
-                    # Log the action to Google Sheets
-                    log_to_google_sheets(st.session_state.email, uploaded_file.name, "Generate Executive Summary", response_content)
-
-                except Exception as e:
-                    st.error(f"An error occurred: {str(e)}")
-
-            # Button to generate pipeline data
-            if st.button("Generate Pipeline Data"):
-                try:
-                    pipeline_template = """
-                    Extract and present the following key data points from this RFP document in a table format for CRM entry:
-                    - Client Name
-                    - Opportunity Name
-                    - Primary Contact (name, title, email, and phone)
-                    - Primary Practice (select from: Branded Environments, Corporate and Commercial, Corporate Interiors, Cultural and Civic, Health, Higher Education, Hospitality, K-12 Education, Landscape Architecture, Planning&Strategies, Science and Technology, Single Family Residential, Sports Recreation and Entertainment, Transportation, Urban Design, Unknown / Other)
-                    - Discipline (select from: Arch/Interior Design, Urban Design, Landscape Arch, Advisory Services, Branded Environments, Unknown / Other)
-                    - City
-                    - Country
-                    - RFP Release Date
-                    - Proposal Due Date
-                    - Interview Date
-                    - Selection Date
-                    - Design Start Date
-                    - Design Completion Date
-                    - Construction Start Date
-                    - Construction Completion Date
-                    - Project Description
-                    - Scopes (select from: New, Renovation, Addition, Building Repositioning, Competition, Infrastructure, Master Plan, Planning, Programming, Replacement, Study, Unknown / Other)
-                    - Program Type (select from: Civic and Cultural, Corporate and Commercial, Sports, Recreation + Entertainment, Education, Residential, Science + Technology, Transportation, Misc, Urban Design, Landscape Architecture, Government, Social Purpose, Health, Unknown / Other)
-                    - Delivery Type (select from: Construction Manager at Risk (CMaR), Design Only, Design-Bid-Build, Design-Build, Integrated Project Delivery (IPD), Guaranteed Maximum Price (GMP), Joint Venture (JV), Public Private Partnership (P3), Other)
-                    - Estimated Program Area
-                    - Estimated Budget
-                    - Sustainability Requirement 
-                    
-                    # Additional information aligned with core values
-                    - Design Excellence Opportunities
-                    - Sustainability Initiatives
-                    - Resilience Measures
-                    - Innovation Potential
-                    - Diversity and Inclusion Aspects
-                    - Social Purpose Contributions
-                    - Well-Being Factors
-                    - Technological Integration Points
-                    
-                    If the information is not found, respond with 'Sorry, I could not find that information.'
-
-                    RFP Document Text:
-                    {extracted_text}
-                    """
-
-                    # Generate response using OpenAI's new SDK method
-                    response = openai.Client().chat.completions.create(
-                        model="gpt-4o-mini",  # Use a model you have access to
-                        messages=[
-                            {"role": "system", "content": "You are a helpful assistant."},
-                            {"role": "user", "content": pipeline_template.format(extracted_text=st.session_state.extracted_text)}
-                        ],
-                        max_tokens=1024,
-                        temperature=0.2,
-                        top_p=1.0,
-                        frequency_penalty=0.0,
-                        presence_penalty=0.0
-                    )
-
-                    response_content = response.choices[0].message.content.strip()
-                    st.session_state.messages.append({"role": "assistant", "content": response_content})
-
-                    # Log the action to Google Sheets
-                    log_to_google_sheets(st.session_state.email, uploaded_file.name, "Generate Pipeline Data", response_content)
-
-                except Exception as e:
-                    st.error(f"An error occurred: {str(e)}")
+        st.error(f"An error occurred: {str(e)}")
 
 # Main window for chat interaction
 st.title("RFP Navigator 🧭")
