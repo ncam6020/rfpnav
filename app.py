@@ -207,7 +207,7 @@ st.title("RFP Navigator 🧭")
 
 # Initial screen when no PDF is uploaded or no email entered
 if not st.session_state.email:
-    st.write("Please enter your email address in the sidebar to start.")
+    st.write("Please enter your email address and upload a RFP in the sidebar to start. \n\nRemember, this is generative AI and is experimental.")
 elif not uploaded_file:
     st.write("Please load your RFP in the side window.\n\nRemember, this is generative AI and is experimental.")
 else:
