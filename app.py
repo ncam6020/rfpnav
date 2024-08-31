@@ -106,7 +106,7 @@ with st.sidebar:
             if st.button("Generate Executive Summary"):
                 try:
                     summary_template = """
-                    Create an executive summary of this RFP document tailored for an executive architectural designer. Include key dates (issue date, response due date, and selection date), a project overview, the scope of work, a list of deliverables, Selection Criteria, and other important information. Conclude with a brief one-sentence summary identifying specific areas in the RFP where it aligns with Perkins&Will's core values, such as Design Excellence, Living Design, Sustainability, Resilience, Research, Diversity and Inclusion, Social Purpose, Well-Being, and Technology, with specific examples from the document.
+                    Create an executive summary of this RFP document tailored for an executive architectural designer. Include key dates (issue date, response due date, selection/submission date, other important dates and times), a project overview, the scope of work, a list of deliverables, Selection Criteria, and other important information. Conclude with a brief one-sentence summary identifying specific areas in the RFP where it aligns with Perkins&Will's core values, such as Design Excellence, Living Design, Sustainability, Resilience, Research, Diversity and Inclusion, Social Purpose, Well-Being, and Technology, with specific examples from the document.
                     """
 
                     st.session_state.messages.append({"role": "user", "content": "Please generate an executive summary based on the RFP document."})
