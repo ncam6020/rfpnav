@@ -138,6 +138,7 @@ if st.button("Generate Executive Summary"):
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
 
+
             # Button to generate pipeline data
             if st.button("Generate Pipeline Data"):
                 try:
