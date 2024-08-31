@@ -103,36 +103,40 @@ with st.sidebar:
         # Ensure the extracted text is available before proceeding
         if st.session_state.extracted_text:
             # Button to generate the executive summary
-            if st.button("Generate Executive Summary"):
-                try:
-                    summary_template = """
-                    Create an executive summary of this RFP document tailored for an executive architectural designer. Include key dates (issue date, response /submisson due date, selection date, other important dates and times), a project overview, the scope of work, a list of deliverables, Selection Criteria, and other important information. Conclude with a brief one-sentence summary identifying specific areas in the RFP where it aligns with Perkins&Will's core values, such as Design Excellence, Living Design, Sustainability, Resilience, Research, Diversity and Inclusion, Social Purpose, Well-Being, and Technology, with specific examples from the document.
-                    """
+if st.button("Generate Executive Summary"):
+    try:
+        # Directly use the extracted text in the summary template
+        summary_template = f"""
+        Create an executive summary of this RFP document tailored for an executive architectural designer. Include key dates (issue date, response/submission due date, selection date, other important dates and times), a project overview, the scope of work, a list of deliverables, Selection Criteria, and other important information. Conclude with a brief one-sentence summary identifying specific areas in the RFP where it aligns with Perkins&Will's core values, such as Design Excellence, Living Design, Sustainability, Resilience, Research, Diversity and Inclusion, Social Purpose, Well-Being, and Technology, with specific examples from the document.
 
-                    st.session_state.messages.append({"role": "user", "content": "Please generate an executive summary based on the RFP document."})
-                    
-                    # Generate response using OpenAI's new SDK method
-                    response = openai.Client().chat.completions.create(
-                        model="gpt-4o-mini",  # Use a model you have access to
-                        messages=st.session_state.messages + [{"role": "user", "content": summary_template.format(extracted_text=st.session_state.extracted_text)}],  # Include chat history and query with full context
-                        max_tokens=2048,
-                        temperature=0.2,
-                        top_p=1.0,
-                        frequency_penalty=0.0,
-                        presence_penalty=0.0
-                    )
+        RFP Document Text:
+        {st.session_state.extracted_text}
+        """
 
-                    response_content = response.choices[0].message.content.strip()
-                    st.session_state.messages.append({"role": "assistant", "content": response_content})
+        st.session_state.messages.append({"role": "user", "content": "Please generate an executive summary based on the RFP document."})
+        
+        # Generate response using OpenAI's new SDK method
+        response = openai.Client().chat.completions.create(
+            model="gpt-4o-mini",  # Use a model you have access to
+            messages=st.session_state.messages + [{"role": "user", "content": summary_template}],  # Include chat history and query with full context
+            max_tokens=2048,
+            temperature=0.2,
+            top_p=1.0,
+            frequency_penalty=0.0,
+            presence_penalty=0.0
+        )
 
-                    # Calculate tokens used for this response
-                    tokens_used = count_tokens(response_content)
+        response_content = response.choices[0].message.content.strip()
+        st.session_state.messages.append({"role": "assistant", "content": response_content})
 
-                    # Log the action to Google Sheets with tokens used
-                    log_to_google_sheets(st.session_state.email, uploaded_file.name, "Generate Executive Summary", response_content, temperature=0.2, tokens_used=tokens_used)
+        # Calculate tokens used for this response
+        tokens_used = count_tokens(response_content)
 
-                except Exception as e:
-                    st.error(f"An error occurred: {str(e)}")
+        # Log the action to Google Sheets with tokens used
+        log_to_google_sheets(st.session_state.email, st.session_state.pdf_name, "Generate Executive Summary", response_content, temperature=0.2, tokens_used=tokens_used)
+
+    except Exception as e:
+        st.error(f"An error occurred: {str(e)}")
 
             # Button to generate pipeline data
             if st.button("Generate Pipeline Data"):
