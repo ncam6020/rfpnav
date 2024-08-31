@@ -145,6 +145,7 @@ with st.sidebar:
                     - Primary Practice (select from: Branded Environments, Corporate and Commercial, Corporate Interiors, Cultural and Civic, Health, Higher Education, Hospitality, K-12 Education, Landscape Architecture, Planning & Strategies, Science and Technology, Single Family Residential, Sports Recreation and Entertainment, Transportation, Urban Design, Unknown / Other)
                     - Discipline (select from: Arch/Interior Design, Urban Design, Landscape Arch, Advisory Services, Branded Environments, Unknown / Other)
                     - City
+                    - State /Province
                     - Country
                     - RFP Release Date
                     - Proposal Due Date
@@ -154,13 +155,14 @@ with st.sidebar:
                     - Design Completion Date
                     - Construction Start Date
                     - Construction Completion Date
-                    - Project Description
-                    - Scopes (select from: New, Renovation, Addition, Building Repositioning, Competition, Infrastructure, Master Plan, Planning, Programming, Replacement, Study, Unknown / Other)
-                    - Program Type (select from: Civic and Cultural, Corporate and Commercial, Sports, Recreation + Entertainment, Education, Residential, Science + Technology, Transportation, Misc, Urban Design, Landscape Architecture, Government, Social Purpose, Health, Unknown / Other)
+                    - Project Description (concise one sentence description)
+                    - Scope(s) of Work (select from: New, Renovation, Addition, Building Repositioning, Competition, Infrastructure, Master Plan, Planning, Programming, Replacement, Study, Unknown / Other)
+                    - Program Type(s) (select from: Civic and Cultural, Corporate and Commercial, Sports, Recreation + Entertainment, Education, Residential, Science + Technology, Transportation, Misc, Urban Design, Landscape Architecture, Government, Social Purpose, Health, Unknown / Other)
                     - Delivery Type (select from: Construction Manager at Risk (CMaR), Design Only, Design-Bid-Build, Design-Build, Integrated Project Delivery (IPD), Guaranteed Maximum Price (GMP), Joint Venture (JV), Public Private Partnership (P3), Other)
                     - Estimated Program Area
                     - Estimated Budget
                     - Sustainability Requirement
+                    - BIM Requirments
                     
                     Additional Information Aligned with Core Values:
                     - Design Excellence Opportunities
@@ -170,7 +172,7 @@ with st.sidebar:
                     - Diversity and Inclusion Aspects
                     - Social Purpose Contributions
                     - Well-Being Factors
-                    - Technological Integration Points
+                    - Technological Innovation Oppurtunities
                     
                     If the information is not found, respond with 'Sorry, I could not find that information.'
 
