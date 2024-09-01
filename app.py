@@ -89,7 +89,7 @@ def generate_ai_response(template, action_label):
 # Button Handlers
 def handle_generate_summary():
     summary_template = f"""
-    Create an executive summary of this RFP document tailored for an executive architectural designer. Include key dates (issue date, response/submission due date, selection date, other important dates and times), a project overview, the scope of work, a list of deliverables, Selection Criteria, and other important information. Conclude with a brief one-sentence summary identifying specific areas in the RFP where it aligns with Perkins&Will's core values, such as Design Excellence, Living Design, Sustainability, Resilience, Research, Diversity and Inclusion, Social Purpose, Well-Being, and Technology, with specific examples from the document.
+    Create an executive summary of this RFP document tailored for an executive architectural designer. Include key dates (issue date, response/submission due date, selection date, other important dates and times), a project overview, the scope of work, a list of deliverables, Selection Criteria, and other important information. Conclude with a concise and brief one-sentence summary identifying specific areas in the RFP where it may align with Perkins&Will's core values, such as Design Excellence, Living Design, Sustainability, Resilience, Research, Diversity and Inclusion, Social Purpose, Well-Being, and Technology, with specific examples from the document.
 
     RFP Document Text:
     {st.session_state.extracted_text}
@@ -105,7 +105,7 @@ def handle_generate_pipeline_data():
     - Primary Practice (select from: Branded Environments, Corporate and Commercial, Corporate Interiors, Cultural and Civic, Health, Higher Education, Hospitality, K-12 Education, Landscape Architecture, Planning & Strategies, Science and Technology, Single Family Residential, Sports Recreation and Entertainment, Transportation, Urban Design, Unknown / Other)
     - Discipline (select from: Arch/Interior Design, Urban Design, Landscape Arch, Advisory Services, Branded Environments, Unknown / Other)
     - City
-    - State /Province
+    - State / Province
     - Country
     - RFP Release Date
     - Proposal Due Date
