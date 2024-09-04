@@ -162,6 +162,14 @@ def render_sidebar():
                 result="PDF loaded and text extracted.",
                 tokens_used=len(extracted_text.split())
             )
+            
+             # Uncomment to allow downloading the extracted text
+            # st.sidebar.download_button(
+            #     label="Download extracted text by pages",
+            #     data=extracted_text,
+            #     file_name="extracted_text_by_pages.txt",
+            #     mime="text/plain"
+            # )
 
             st.sidebar.markdown('---')
 
