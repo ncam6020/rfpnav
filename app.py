@@ -149,6 +149,7 @@ def render_sidebar():
     if st.session_state.email:
         uploaded_file = st.sidebar.file_uploader("Upload your PDF", type=["pdf"])
 
+        # Only extract PDF content if a new file is uploaded or if it's not already in session state
         if uploaded_file and uploaded_file.name != st.session_state.pdf_name:
             extracted_text = extract_text_from_pdf(uploaded_file.read())
             st.session_state.extracted_text = extracted_text
@@ -162,16 +163,9 @@ def render_sidebar():
                 tokens_used=len(extracted_text.split())
             )
 
-            # Commented out download button for debugging
-            # st.sidebar.download_button(
-            #     label="Download extracted text by pages",
-            #     data=extracted_text,
-            #     file_name="extracted_text_by_pages.txt",
-            #     mime="text/plain"
-            # )
-
             st.sidebar.markdown('---')
 
+        # Ensure extracted text is available for actions
         if st.session_state.extracted_text:
             st.sidebar.subheader("**Key Actions**")
             if st.sidebar.button("Generate Executive Summary"):
@@ -207,20 +201,24 @@ def render_main_ui():
                             st.session_state.feedback[message['content']] = "Thumbs Down"
                             log_to_google_sheets(st.session_state.email, st.session_state.pdf_name, message["content"], "Thumbs Down")
 
-        if prompt := st.chat_input("Ask a question or request data from the RFP"):
-            st.session_state.messages.append({"role": "user", "content": prompt})
-            with st.chat_message("user"):
-                st.write(prompt)
-            
-            query_template = f"""
-            Based on the provided document, answer the following question: '{prompt}'. 
-            Provide a concise and accurate response. 
-            If the information is not explicitly mentioned, provide relevant context or suggest an appropriate next step.
-            """
-            response_content = generate_ai_response(query_template, prompt)
-            if response_content:
-                with st.chat_message("assistant"):
-                    st.write(response_content)
+        if st.session_state.extracted_text:
+            if prompt := st.chat_input("Ask a question or request data from the RFP"):
+                st.session_state.messages.append({"role": "user", "content": prompt})
+                with st.chat_message("user"):
+                    st.write(prompt)
+                
+                query_template = f"""
+                Based on the provided document, answer the following question: '{prompt}'. 
+                Provide a concise and accurate response. 
+                If the information is not explicitly mentioned, provide relevant context or suggest an appropriate next step.
+
+                RFP Document Text:
+                {st.session_state.extracted_text}
+                """
+                response_content = generate_ai_response(query_template, prompt)
+                if response_content:
+                    with st.chat_message("assistant"):
+                        st.write(response_content)
 
 # Run the App
 render_sidebar()
