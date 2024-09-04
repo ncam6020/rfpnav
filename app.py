@@ -162,14 +162,6 @@ def render_sidebar():
                 tokens_used=len(extracted_text.split())
             )
 
-            # Commented out download button for debugging
-            # st.sidebar.download_button(
-            #     label="Download extracted text by pages",
-            #     data=extracted_text,
-            #     file_name="extracted_text_by_pages.txt",
-            #     mime="text/plain"
-            # )
-
             st.sidebar.markdown('---')
 
         if st.session_state.extracted_text:
@@ -188,7 +180,7 @@ def render_main_ui():
         st.write("Please enter your email address and upload an RFP in the sidebar to start. \n\nRemember, this is generative AI and is experimental.")
     elif not st.session_state.pdf_name:
         st.write("Please load your RFP in the sidebar.\n\nRemember, this is generative AI and is experimental.")
-    else:
+    elif st.session_state.extracted_text:
         st.markdown('---')
         st.subheader("**Chat Interface**")
 
